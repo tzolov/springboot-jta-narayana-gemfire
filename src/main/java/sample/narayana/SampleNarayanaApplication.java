@@ -59,7 +59,8 @@ public class SampleNarayanaApplication implements CommandLineRunner {
 	@PostConstruct
 	public void registerNarayanaUserTransaction() {
 		// Gemfire uses JNDI:java:comp/UserTransaction to lookup global transactions.
-		inMemoryJndiBuilder.bind("java:comp/UserTransaction", new UserTransactionImple());
+		inMemoryJndiBuilder.bind("java:comp/UserTransaction", com.arjuna.ats.jta.UserTransaction.userTransaction());
+		inMemoryJndiBuilder.bind("java:/TransactionManager", com.arjuna.ats.jta.TransactionManager.transactionManager());
 	}
 
 	@Autowired
