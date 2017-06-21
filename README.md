@@ -7,7 +7,7 @@ Use Narayana JTA provider as global transaction manager to coordinate GemFire/Ge
 Fruthermore Narayana support [Last Resource Commit Optiomization](http://narayana.io//docs/project/index.html#d0e1859) allowing with Gemfire/Geode transactions to be run as last resources.
 
 ## Geode/Gemfire JTA Background
-Out of the box, Gemfire/Geode provides the following [JTA Global Transactions](http://geode.docs.pivotal.io/docs/developing/transactions/JTA_transactions.html) integration options:
+Out of the box, Gemfire/Geode provides the following [JTA Global Transactions](http://geode.apache.org/docs/guide/11/developing/transactions/JTA_transactions.html) integration options:
 
 1. Have Gemfire/Geode act as JTA transaction manager - Mind that Gemfire JTA manager is **not JTA compliant** and could cause synchronization and transaction coordination problems. In its current state you better not use it as JTA manager!
 2. Coordinate with an external JTA transaction manager in a container (such as WebLogic or JBoss). Also GemFire can be set as the "last resource" while using a container. - While this approach provides a reliable JTA capabilities it requires a heavey-weight JEE container. 
@@ -17,7 +17,7 @@ integration extends option (2) by using Narayana as an external JTA manager with
 
 At startup GemFire looks for a TransactionManager `javax.transaction.TransactionManager` that has been bound to its `JNDI` context. 
 When GemFire finds such an external transaction manager, all GemFire region operations (such as get and put) will participate in 
-global transactions hosted by this external JTA transaction manager: [Coordinates with External JTA Transactions Managers](http://geode.docs.pivotal.io/docs/developing/transactions/JTA_transactions.html#concept_cp1_zx1_wk)
+global transactions hosted by this external JTA transaction manager: [Coordinates with External JTA Transactions Managers](http://geode.apache.org/docs/guide/11/developing/transactions/JTA_transactions.html#concept_cp1_zx1_wk)
 
 Because Gemfire/Gedoe require JNDI provider to lookup the global transactions we have build a simple (in-memory) JNDI provider: `io.pivotal.poc.gemfire.gtx.jndi.SimpleNamingContextBuilder`.
 
