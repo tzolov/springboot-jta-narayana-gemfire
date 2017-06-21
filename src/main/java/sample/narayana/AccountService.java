@@ -16,6 +16,9 @@
 
 package sample.narayana;
 
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +42,9 @@ public class AccountService {
 	}
 
 	public void createAccountAndNotify(String username, Region<String, Account> region) {
+
+		this.enableLastResourceCommit();
+
 		this.jmsTemplate.convertAndSend("accounts", username);
 
 		Account account = new Account(username);
@@ -49,6 +55,18 @@ public class AccountService {
 
 		if ("error".equals(username)) {
 			throw new SampleRuntimeException("Simulated error");
+		}
+	}
+
+	private void enableLastResourceCommit() {
+		try {
+			Transaction tx = com.arjuna.ats.jta.TransactionManager.transactionManager().getTransaction();
+			tx.enlistResource(new GeodeLastResourceCommit());
+			System.out.println("Enlist LRCO in: " + tx.getClass());
+		} catch (RollbackException e) {
+			e.printStackTrace();
+		} catch (SystemException e) {
+			e.printStackTrace();
 		}
 	}
 }
