@@ -8,8 +8,9 @@
 		<relativePath/>
 	</parent>
 	<artifactId>springboot-jta-narayana-gemfire</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
 	<name>springboot-jta-narayana-gemfire</name>
-	<description>Spring Boot Narayana JTA, JMS and Gemfire Sample</description>
+	<description>Spring Boot Narayana JTA, JPA, JMS and Gemfire Example Application</description>
 	<url>http://projects.spring.io/spring-boot/</url>
 
 	<properties>

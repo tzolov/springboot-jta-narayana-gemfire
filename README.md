@@ -23,6 +23,41 @@ Because Gemfire/Gedoe require JNDI provider to lookup the global transactions we
 
 Note: `SimpleNamingContextBuilder` re-uses the code from the `spring-test` project. If you know of better solution for createing in-memory JNDI providers please let me know!
 
+#### Last Resource Commit Optimization (LRCO)
+Narayana allows a single resource that is only one-phase aware (such as Geode), and does not support the prepare phase, can be enlisted with a transaction that is manipulating two-phase aware participants.
+The `GeodeNarayanaLrcoResource` implements the required `com.arjuna.ats.jta.resources.LastResourceCommitOptimisation` marker interface, allowing Geode to be enlisted as Last Resource in Narayana JTA transactions.
+
+The `NarayanaLrcoSupport.enlistGeodeAsLastCommitResource` helper allows to enlist manually Geode LRCO like this:  
+```$java
+ @Transactional
+ public void myServiceMethod(Region region) {
+    
+   // Enable Geode Narayana LRCO
+   NarayanaLrcoSupport.enlistGeodeAsLastCommitResource();
+ 
+   .....
+     
+   region.put(KEY, VALUE);
+   region.get(KEY);
+   .....
+ }
+
+```
+The `enlistGeodeAsLastCommitResource()` method must be called within the transactional boundaries (e.g in a transactional method) but before any Geode operation was used!
+ 
+The `@NarayanaLastResourceCommitOptimization` annotation allows to automatically enlist Geode as Last Resource in any transaction defined by `@Tranasactional` annotation.
+  
+The `@NarayanaLastResourceCommitOptimization` annotation may only be used on a Spring application that is also annotated with `@EnableTransactionManagement` with an explicit `order` set to value other than `Integer#MAX_VALUE` or `Integer#MIN_VALUE`.  
+ 
+```$java
+@SpringBootApplication
+@NarayanaLastResourceCommitOptimization
+@EnableTransactionManagement(order = 1)
+public class SampleNarayanaApplication implements CommandLineRunner { ... }
+
+```
+
+
 ## Build (default with Gemfire)
 ``` 
 mvn clean install
@@ -35,5 +70,5 @@ java -Dgemfire.name=server1 \
      -Dgemfire.jmx-manager-port=1199 \
      -Dgemfire.jmx-manager=true \
      -Dgemfire.jmx-manager-start=true \
-     -jar ./target/springboot-jta-narayana-gemfire-1.5.4.RELEASE.jar
+     -jar ./target/springboot-jta-narayana-gemfire-1.0.0-SNAPSHOT.jar
 

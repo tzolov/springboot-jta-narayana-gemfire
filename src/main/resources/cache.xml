@@ -16,7 +16,7 @@
                 com.gemstone.gemfire.pdx.ReflectionBasedAutoSerializer
             </class-name>
             <parameter name="classes">
-                <string>sample.narayana.Account</string>
+                <string>net.tzolov.geode.jta.narayana.application.Account</string>
             </parameter>
         </pdx-serializer>
     </pdx>

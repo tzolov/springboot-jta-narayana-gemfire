@@ -1,20 +1,21 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2017. the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package sample.lrco;
+package net.tzolov.geode.jta.narayana.lrco;
 
 import com.arjuna.ats.jta.resources.LastResourceCommitOptimisation;
 import com.gemstone.gemfire.LogWriter;
@@ -25,18 +26,30 @@ import com.gemstone.gemfire.internal.cache.TXManagerImpl;
 import com.gemstone.gemfire.internal.cache.TXStateProxy;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 
-import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
-import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 /**
- * @author Christian Tzolov
+ * Implements the {@link LastResourceCommitOptimisation} marker interface. It extends the {@link XAResource} interface
+ * but provides no additional methods. When enlisting the resource via method Transaction.enlistResource, Narayana
+ * ensures that only a single instance of this type of participant is used within each transaction. Your resource
+ * is driven last in the commit protocol, and no invocation of method prepare occurs.
+ * <p>
+ * By default an attempt to enlist more than one instance of a LastResourceCommitOptimisation class will fail and false
+ * will be returned from Transaction.enlistResource. This behavior can be overridden by setting the
+ * <b>com.arjuna.ats.jta.allowMultipleLastResources</b> to true.
+ * <p>
+ * <p>
+ * Note: To large extend the {@link GeodeNarayanaLrcoResource} implementation reuses the
+ * {@link com.gemstone.gemfire.internal.ra.spi.JCALocalTransaction} code:
+ * https://github.com/apache/geode/blob/develop/geode-core/src/jca/java/org/apache/geode/internal/ra/spi/JCALocalTransaction.java
+ *
+ * @author Christian Tzolov (christian.tzolov@gmail.com)
  */
-public class GeodeNarayanaLRCOResource implements LastResourceCommitOptimisation {
+public class GeodeNarayanaLrcoResource implements LastResourceCommitOptimisation {
 
     private volatile GemFireCacheImpl cache;
     private volatile TXManagerImpl gfTxMgr;
@@ -47,7 +60,7 @@ public class GeodeNarayanaLRCOResource implements LastResourceCommitOptimisation
     public void commit(Xid xid, boolean b) throws XAException {
         LogWriter logger = this.cache.getLogger();
         if (logger.fineEnabled()) {
-            logger.fine("GeodeNarayanaLRCOResource:invoked commit");
+            logger.fine("GeodeNarayanaLrcoResource:invoked commit");
         }
 
         TXStateProxy tsp = this.gfTxMgr.getTXState();
@@ -80,7 +93,7 @@ public class GeodeNarayanaLRCOResource implements LastResourceCommitOptimisation
 
     @Override
     public boolean isSameRM(XAResource xaResource) throws XAException {
-        return xaResource instanceof GeodeNarayanaLRCOResource;
+        return xaResource instanceof GeodeNarayanaLrcoResource;
     }
 
     @Override
@@ -101,7 +114,7 @@ public class GeodeNarayanaLRCOResource implements LastResourceCommitOptimisation
         } else {
             LogWriter logger = this.cache.getLogger();
             if (logger.fineEnabled()) {
-                logger.fine("GeodeNarayanaLRCOResource:invoked rollback");
+                logger.fine("GeodeNarayanaLrcoResource:invoked rollback");
             }
 
             try {
@@ -132,17 +145,21 @@ public class GeodeNarayanaLRCOResource implements LastResourceCommitOptimisation
 
             LogWriter logger = this.cache.getLogger();
             if (logger.fineEnabled()) {
-                logger.fine("GeodeNarayanaLRCOResource::start:" + xid + ", i=" + i);
+                logger.fine("GeodeNarayanaLrcoResource::start:" + xid + ", i=" + i);
             }
 
             TransactionManager tm = this.cache.getJTATransactionManager();
-            System.out.println("TransactionManager: " + tm.getClass());
+
+            if (logger.fineEnabled()) {
+                logger.fine("Start Geode Transaction using TransactionManager: " + tm.getClass());
+            }
+
             if (this.tid != null) {
                 throw new XAException(" A transaction is already in progress");
             } else {
                 if (tm != null && tm.getTransaction() != null) {
                     if (logger.fineEnabled()) {
-                        logger.fine("GeodeNarayanaLRCOResource: JTA transaction is on");
+                        logger.fine("GeodeNarayanaLrcoResource: JTA transaction is on");
                     }
 
                     TXStateProxy tsp = this.gfTxMgr.getTXState();
@@ -155,10 +172,10 @@ public class GeodeNarayanaLRCOResource implements LastResourceCommitOptimisation
                     tsp.setJCATransaction();
                     this.tid = tsp.getTransactionId();
                     if (logger.fineEnabled()) {
-                        logger.fine("GeodeNarayanaLRCOResource:begun GFE transaction");
+                        logger.fine("GeodeNarayanaLrcoResource:begun GFE transaction");
                     }
                 } else if (logger.fineEnabled()) {
-                    logger.fine("GeodeNarayanaLRCOResource: JTA Transaction does not exist.");
+                    logger.fine("GeodeNarayanaLrcoResource: JTA Transaction does not exist.");
                 }
 
             }
@@ -171,42 +188,10 @@ public class GeodeNarayanaLRCOResource implements LastResourceCommitOptimisation
         this.cache = (GemFireCacheImpl) CacheFactory.getAnyInstance();
         LogWriter logger = this.cache.getLogger();
         if (logger.fineEnabled()) {
-            logger.fine("GeodeNarayanaLRCOResource:init. Inside init");
+            logger.fine("GeodeNarayanaLrcoResource:init. Inside init");
         }
 
         this.gfTxMgr = this.cache.getTxManager();
         this.initDone = true;
-    }
-
-    /**
-     * Use this helper method to enlist Geode as a Last Resource Commit in current transaction.
-     * <p>
-     * Must be called inside the transactional boundaries but before any Geode operation was used! For example:
-     * <p>
-     * <pre>
-     *      &#64;Transactional
-     *     	public void myServiceMethod(Region region) throws SystemException, RollbackException {
-     *
-     * 			// Enable LRCO
-     * 			enlistGeodeAsLastCommitResource();
-     *          ......
-     *
-     *          region.put(KEY, VALUE);
-     *      }
-     *
-     * </pre>
-     *
-     * @throws SystemException
-     * @throws RollbackException
-     */
-    public static void enlistGeodeAsLastCommitResource() throws SystemException, RollbackException {
-
-        Transaction tx = com.arjuna.ats.jta.TransactionManager.transactionManager().getTransaction();
-        tx.enlistResource(new GeodeNarayanaLRCOResource());
-
-        LogWriter logger = CacheFactory.getAnyInstance().getLogger();
-        if (logger.fineEnabled()) {
-            logger.fine("GeodeNarayanaLRCOResource:Enlist into: " + tx.getClass());
-        }
     }
 }

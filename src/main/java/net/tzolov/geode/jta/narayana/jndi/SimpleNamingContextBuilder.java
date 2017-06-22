@@ -1,0 +1,191 @@
+/*
+ * Copyright 2017. the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+package net.tzolov.geode.jta.narayana.jndi;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.util.ClassUtils;
+
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.naming.spi.InitialContextFactory;
+import javax.naming.spi.InitialContextFactoryBuilder;
+import javax.naming.spi.NamingManager;
+import java.util.Hashtable;
+
+/**
+ * In-memory JNDI naming context builder implementation, where the new InitialContext() will expose the required objects.
+ * Usable for standalone applications, e.g. for binding a JDBC DataSource to a well-known JNDI location, to be able to
+ * use traditional J2EE data access code outside of a J2EE container.
+ * <p>
+ * The code here is borrowed from: http://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/mock/jndi/SimpleNamingContextBuilder.html
+ *
+ * @author Christian Tzolov (christian.tzolov@gmail.com)
+ */
+public class SimpleNamingContextBuilder implements InitialContextFactoryBuilder {
+
+    private static final Log logger = LogFactory.getLog(SimpleNamingContextBuilder.class);
+
+    private final Hashtable<String, Object> boundObjects = new Hashtable<String, Object>();
+
+    /**
+     * An instance of this class bound to JNDI
+     */
+    private static volatile SimpleNamingContextBuilder activated;
+
+    private static boolean initialized = false;
+
+    private static final Object initializationLock = new Object();
+
+
+    /**
+     * Checks if a SimpleNamingContextBuilder is active.
+     *
+     * @return the current SimpleNamingContextBuilder instance,
+     * or {@code null} if none
+     */
+    public static SimpleNamingContextBuilder getCurrentContextBuilder() {
+        return activated;
+    }
+
+    /**
+     * If no SimpleNamingContextBuilder is already configuring JNDI,
+     * create and activate one. Otherwise take the existing activate
+     * SimpleNamingContextBuilder, clear it and return it.
+     * <p>This is mainly intended for test suites that want to
+     * reinitialize JNDI bindings from scratch repeatedly.
+     *
+     * @return an empty SimpleNamingContextBuilder that can be used
+     * to control JNDI bindings
+     */
+    public static SimpleNamingContextBuilder emptyActivatedContextBuilder() {
+        if (activated != null) {
+            // Clear already activated context builder.
+            activated.clear();
+        } else {
+            // Create and activate new context builder.
+            SimpleNamingContextBuilder builder = new SimpleNamingContextBuilder();
+            // The activate() call will cause an assignment to the activated variable.
+            try {
+                builder.activate();
+            } catch (NamingException e) {
+                logger.error("Failed to create in-memory JNDI provider", e);
+                throw new RuntimeException(e);
+            }
+        }
+        return activated;
+    }
+
+    /**
+     * Register the context builder by registering it with the JNDI NamingManager.
+     * Note that once this has been done, {@code new InitialContext()} will always
+     * return a context from this factory. Use the {@code emptyActivatedContextBuilder()}
+     * static method to get an empty context (for example, in test methods).
+     *
+     * @throws IllegalStateException if there's already a naming context builder
+     *                               registered with the JNDI NamingManager
+     */
+    public void activate() throws IllegalStateException, NamingException {
+        logger.info("Activating simple JNDI environment");
+        synchronized (initializationLock) {
+            if (!initialized) {
+                if (NamingManager.hasInitialContextFactoryBuilder()) {
+                    throw new IllegalStateException(
+                            "Cannot activate SimpleNamingContextBuilder: there is already a JNDI provider registered. " +
+                                    "Note that JNDI is a JVM-wide service, shared at the JVM system class loader level, " +
+                                    "with no reset option. As a consequence, a JNDI provider must only be registered once per JVM.");
+                }
+                NamingManager.setInitialContextFactoryBuilder(this);
+                initialized = true;
+            }
+        }
+        activated = this;
+    }
+
+    /**
+     * Temporarily deactivate this context builder. It will remain registered with
+     * the JNDI NamingManager but will delegate to the standard JNDI InitialContextFactory
+     * (if configured) instead of exposing its own bound objects.
+     * <p>Call {@code activate()} again in order to expose this context builder's own
+     * bound objects again. Such activate/deactivate sequences can be applied any number
+     * of times (e.g. within a larger integration test suite running in the same VM).
+     *
+     * @see #activate()
+     */
+    public void deactivate() {
+        logger.info("Deactivating simple JNDI environment");
+        activated = null;
+    }
+
+    /**
+     * Clear all bindings in this context builder, while keeping it active.
+     */
+    public void clear() {
+        this.boundObjects.clear();
+    }
+
+    /**
+     * Bind the given object under the given name, for all naming contexts
+     * that this context builder will generate.
+     *
+     * @param name the JNDI name of the object (e.g. "java:comp/env/jdbc/myds")
+     * @param obj  the object to bind (e.g. a DataSource implementation)
+     */
+    public void bind(String name, Object obj) {
+        if (logger.isInfoEnabled()) {
+            logger.info("Static JNDI binding: [" + name + "] = [" + obj + "]");
+        }
+        this.boundObjects.put(name, obj);
+    }
+
+
+    /**
+     * Simple InitialContextFactoryBuilder implementation,
+     * creating a new SimpleNamingContext instance.
+     *
+     * @see SimpleNamingContext
+     */
+    @Override
+    public InitialContextFactory createInitialContextFactory(Hashtable<?, ?> environment) {
+        if (activated == null && environment != null) {
+            Object icf = environment.get(Context.INITIAL_CONTEXT_FACTORY);
+            if (icf != null) {
+                Class<?> icfClass;
+                if (icf instanceof Class) {
+                    icfClass = (Class<?>) icf;
+                } else if (icf instanceof String) {
+                    icfClass = ClassUtils.resolveClassName((String) icf, getClass().getClassLoader());
+                } else {
+                    throw new IllegalArgumentException("Invalid value type for environment key [" +
+                            Context.INITIAL_CONTEXT_FACTORY + "]: " + icf.getClass().getName());
+                }
+                if (!InitialContextFactory.class.isAssignableFrom(icfClass)) {
+                    throw new IllegalArgumentException(
+                            "Specified class does not implement [" + InitialContextFactory.class.getName() + "]: " + icf);
+                }
+                try {
+                    return (InitialContextFactory) icfClass.newInstance();
+                } catch (Throwable ex) {
+                    throw new IllegalStateException("Cannot instantiate specified InitialContextFactory: " + icf, ex);
+                }
+            }
+        }
+
+        // Default case...
+        return environment1 -> new SimpleNamingContext("", boundObjects, (Hashtable<String, Object>) environment1);
+    }
+}
