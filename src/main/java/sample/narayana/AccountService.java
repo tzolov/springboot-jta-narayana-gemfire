@@ -16,16 +16,12 @@
 
 package sample.narayana;
 
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.Transactional;
-
+import com.gemstone.gemfire.cache.Region;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.gemstone.gemfire.cache.Region;
 
 @Service
 @Transactional
@@ -43,7 +39,13 @@ public class AccountService {
 
 	public void createAccountAndNotify(String username, Region<String, Account> region) {
 
-		this.enableLastResourceCommit();
+//		try {
+//			enlistGeodeAsLastCommitResource();
+//		} catch (SystemException e) {
+//			e.printStackTrace();
+//		} catch (RollbackException e) {
+//			e.printStackTrace();
+//		}
 
 		this.jmsTemplate.convertAndSend("accounts", username);
 
@@ -55,18 +57,6 @@ public class AccountService {
 
 		if ("error".equals(username)) {
 			throw new SampleRuntimeException("Simulated error");
-		}
-	}
-
-	private void enableLastResourceCommit() {
-		try {
-			Transaction tx = com.arjuna.ats.jta.TransactionManager.transactionManager().getTransaction();
-			tx.enlistResource(new GeodeLastResourceCommit());
-			System.out.println("Enlist LRCO in: " + tx.getClass());
-		} catch (RollbackException e) {
-			e.printStackTrace();
-		} catch (SystemException e) {
-			e.printStackTrace();
 		}
 	}
 }

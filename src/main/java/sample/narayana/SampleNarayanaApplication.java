@@ -30,15 +30,16 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
 import com.gemstone.gemfire.cache.Cache;
 import com.gemstone.gemfire.cache.CacheFactory;
 import com.gemstone.gemfire.cache.Region;
 import com.gemstone.gemfire.distributed.ServerLauncher;
 import sample.narayana.jndi.SimpleNamingContextBuilder;
+import sample.lrco.annotation.NarayanaLastResourceCommitOptimization;
 
 @SpringBootApplication
-@EnableTransactionManagement
+@NarayanaLastResourceCommitOptimization
+@EnableTransactionManagement(order = 1)
 public class SampleNarayanaApplication implements CommandLineRunner {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SampleNarayanaApplication.class);
@@ -79,6 +80,7 @@ public class SampleNarayanaApplication implements CommandLineRunner {
 		ServerLauncher serverLauncher = new ServerLauncher.Builder()
 				.set("jmx-manager", "true")
 				.set("jmx-manager-start", "true")
+				.set("log-level", "debug")
 				.build();
 
 		ServerLauncher.ServerState start = serverLauncher.start();
