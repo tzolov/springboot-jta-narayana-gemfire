@@ -15,7 +15,7 @@ Out of the box, Geode/GemFire provides the following [JTA Global Transactions](h
 **The [SpringBoot Narayana](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-jta.html#boot-features-jta-narayana) 
 integration extends option (2) by using Narayana as an external JTA manager without the need of running a J2EE container.** 
 
-##### Geode/GemFire JTA Lookup (JNDI)
+#### Geode/GemFire JTA Lookup (JNDI)
 At startup Geode/GemFire looks for a TransactionManager `javax.transaction.TransactionManager` bound to well known `JNDI` context paths. 
 When Geode/GemFire finds such an external transaction manager, it enlists all `Region` operations (such as `GET` and `PUT`...) to participate in 
 the global transactions hosted by this external JTA transaction manager: [Coordinates with External JTA Transactions Managers](http://geode.apache.org/docs/guide/11/developing/transactions/JTA_transactions.html#concept_cp1_zx1_wk)
