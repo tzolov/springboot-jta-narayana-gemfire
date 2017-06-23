@@ -1,10 +1,10 @@
-# JTA Narayana (e.g. JBoss JTA) with GemFire
+# Narayana (e.g. JBoss) JTA with Geode/GemFire
 
 Use Narayana JTA provider as global transaction manager to coordinate Geode/GemFire cache transactions along with JPA/JDBC and/or JMS resources.
 
 [Narayana](http://narayana.io//docs/project/index.html) is light-weight (e.g. out-of-container), embeddable global transaction manager. Narayana is JTA compliant and can be integrated with Geode/GemFire to perform XA transaction across Geode, JPA/JDBC and JMS operations. 
 
-Fruthermore Narayana support [Last Resource Commit Optiomization](http://narayana.io//docs/project/index.html#d0e1859) allowing with Geode/GemFire transactions to be run as last resources.
+Also Narayana supports [Last Resource Commit Optiomization](http://narayana.io//docs/project/index.html#d0e1859) allowing with Geode/GemFire transactions to be run as last resources.
 
 ## Geode/GemFire JTA Background
 Out of the box, Geode/GemFire provides the following [JTA Global Transactions](http://geode.apache.org/docs/guide/11/developing/transactions/JTA_transactions.html) integration options:
