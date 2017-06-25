@@ -28,13 +28,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 /**
- * {@link NarayanaLrcoAspect} is a Spring {@link Aspect}, the get activated when the process execution flow
- * crosses transactions boundaries.
+ * {@link NarayanaLrcoAspect} is a Spring {@link Aspect}, that gets activated when the process
+ * enters a running transaction.
  * <p>
- * When a Spring {@link org.springframework.stereotype.Service @Service component} class or method are annotated with a
- * {@link Transactional @Transactional annotation} then this aspect will enlist Geode as a
- * {@link com.arjuna.ats.jta.resources.LastResourceCommitOptimisation}, non-compliant XA resource withing the ongoing
- * Narayana Transaction.
+ * When a Spring {@link org.springframework.stereotype.Service @Service component} class or method is annotated with a
+ * {@link Transactional @Transactional annotation} then the {@link NarayanaLrcoAspect} enlists Geode as a
+ * {@link com.arjuna.ats.jta.resources.LastResourceCommitOptimisation LastResourceCommitOptimisation} - non-XAResource
+ * within the current Narayana {@link javax.transaction.Transaction Transaction}.
+ *
+ * You can Enable or Disable the LRCO behavior using the spring.jta.narayana.onePhaseCommit property. Later defaults to true.
  *
  * @author Christian Tzolov (christian.tzolov@gmail.com)
  */
@@ -46,20 +48,21 @@ public class NarayanaLrcoAspect implements Ordered {
     private int order;
 
     @Value("${spring.jta.narayana.onePhaseCommit:false}")
-    private boolean jtaNarayanaOnePhaseCommit;
+    private boolean jtaNarayanaOnePhaseCommitEnabled;
 
     /* (non-Javadoc) */
     @Before("@within(transactional)")
     public void doEnableGeodeNarayanaLastResourceCommitOptimization(Transactional transactional) {
 
-        Assert.isTrue(jtaNarayanaOnePhaseCommit, "The spring.jta.narayana.onePhaseCommit must be " +
-                "set to true for the LastResourceCommitOptimization to work!");
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("intercept a running transaction");
+        if (jtaNarayanaOnePhaseCommitEnabled) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Enlisting Geode as Last Resource Commit Optimization.");
+            }
+            NarayanaLrcoSupport.enlistGeodeAsLastCommitResource();
+        } else {
+            logger.warn("The Last Resource Commit Optimization is Disabled!. " +
+                    "To enable it set spring.jta.narayana.onePhaseCommit=true.");
         }
-
-        NarayanaLrcoSupport.enlistGeodeAsLastCommitResource();
     }
 
     @Override

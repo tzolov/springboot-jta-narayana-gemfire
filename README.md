@@ -20,9 +20,24 @@ At startup Geode/GemFire looks for a TransactionManager `javax.transaction.Trans
 When Geode/GemFire finds such an external transaction manager, it enlists all `Region` operations (such as `GET` and `PUT`...) to participate in 
 the global transactions hosted by this external JTA transaction manager: [Coordinates with External JTA Transactions Managers](http://geode.apache.org/docs/guide/11/developing/transactions/JTA_transactions.html#concept_cp1_zx1_wk)
 
-Because Geode/GemFire require JNDI provider to lookup the global transactions we have build a simple (in-memory) JNDI provider: `io.pivotal.poc.gemfire.gtx.jndi.SimpleNamingContextBuilder`.
+For the needs of Geode/GemFire JNDI lookup, we leverage the standalone JNPServer (in-memory) JNDI provider. Later requires adding the `org.jboss.naming:jnpserver:5.0.3.GA` pom dependency.
+JNPServer can be used like this:
+ 
+```java
+    // Standalone JNDI server used by Gemfire to lookup global transactions.
+    private static final NamingBeanImpl JndiServer = new NamingBeanImpl();
 
-_Note: The `SimpleNamingContextBuilder` implementation re-uses code from the `spring-test` project. Perhaps i will release this as an independent lightweight JNDI implementation hosted on Bintray_
+    @PostConstruct
+    public void registerNarayanaUserTransaction() throws Exception {
+        // Gemfire uses JNDI java:/TransactionManager name to lookup the JTA transaction manager.
+        JndiServer.start();
+        // Bind JTA implementation with default names
+        JNDIManager.bindJTAImplementation();
+    }
+
+    ....
+    JndiServer.stop();
+```
 
 #### Last Resource Commit Optimization (LRCO)
 
@@ -35,7 +50,7 @@ Narayana allows a single resource that is only one-phase aware and does not supp
 The [GeodeNarayanaLrcoResource](./src/main/java/net/tzolov/geode/jta/narayana/lrco/GeodeNarayanaLrcoResource.java) implements the required `com.arjuna.ats.jta.resources.LastResourceCommitOptimisation` interface, allowing Geode/GemFire to be enlisted as Last Resource in Narayana JTA transactions.
 
 The `NarayanaLrcoSupport.enlistGeodeAsLastCommitResource` manually enlists Geode/GemFire as Last Resource:  
-```$java
+```java
  @Transactional
  public void myServiceMethod(Region region) {
     
@@ -55,7 +70,7 @@ The `@NarayanaLastResourceCommitOptimization` annotation allows to automatically
   
 The `@NarayanaLastResourceCommitOptimization` annotation may only be used on a Spring application that is also annotated with `@EnableTransactionManagement` with an explicit `order` set to value other than `Integer#MAX_VALUE` or `Integer#MIN_VALUE`.  
  
-```$java
+```java
 @SpringBootApplication
 @NarayanaLastResourceCommitOptimization
 @EnableTransactionManagement(order = 1)

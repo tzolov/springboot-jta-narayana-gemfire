@@ -17,12 +17,13 @@
 
 package net.tzolov.geode.jta.narayana.application;
 
+import com.arjuna.ats.jta.utils.JNDIManager;
 import com.gemstone.gemfire.cache.Cache;
 import com.gemstone.gemfire.cache.CacheFactory;
 import com.gemstone.gemfire.cache.Region;
 import com.gemstone.gemfire.distributed.ServerLauncher;
-import net.tzolov.geode.jta.narayana.jndi.SimpleNamingContextBuilder;
 import net.tzolov.geode.jta.narayana.lrco.annotation.NarayanaLastResourceCommitOptimization;
+import org.jnp.server.NamingBeanImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,15 +46,15 @@ public class SampleNarayanaApplication implements CommandLineRunner {
 
     private static final Logger LOG = LoggerFactory.getLogger(SampleNarayanaApplication.class);
 
-    // In-Memory JNDI transactionalAccountService used by Gemfire to lookup global transactions.
-    // The SimpleNamingContextBuilder MUST be created before the Spring Application Context!
-    private static SimpleNamingContextBuilder inMemoryJndiBuilder = SimpleNamingContextBuilder.emptyActivatedContextBuilder();
+    // Standalone JNDI server used by Gemfire to lookup global transactions.
+    private static final NamingBeanImpl JndiServer = new NamingBeanImpl();
 
     @PostConstruct
-    public void registerNarayanaUserTransaction() {
+    public void registerNarayanaUserTransaction() throws Exception {
         // Gemfire uses JNDI java:/TransactionManager name to lookup the JTA transaction manager.
-        inMemoryJndiBuilder.bind("java:/TransactionManager", com.arjuna.ats.jta.TransactionManager.transactionManager());
-        //inMemoryJndiBuilder.bind("java:/UserTransaction", com.arjuna.ats.jta.UserTransaction.userTransaction());
+        JndiServer.start();
+        // Bind JTA implementation with default names
+        JNDIManager.bindJTAImplementation();
     }
 
     @Autowired
@@ -94,5 +95,6 @@ public class SampleNarayanaApplication implements CommandLineRunner {
         LOG.info("JAP entry count is still " + transactionalAccountService.jpaEntryCount());
 
         serverLauncher.stop();
+        JndiServer.stop();
     }
 }
