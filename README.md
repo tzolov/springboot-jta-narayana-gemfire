@@ -94,7 +94,7 @@ mvn clean install
 
 ##### Geode 1.x (with -Pgeode)
 ``` 
-mvn clean install -geode
+mvn clean install -Pgeode
 ```
 
 ## Run
