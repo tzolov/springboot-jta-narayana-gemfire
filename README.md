@@ -38,6 +38,11 @@ JNPServer can be used like this:
     ....
     JndiServer.stop();
 ```
+Add the following `jndi.properties` file to the root classpath:
+```properties
+java.naming.factory.initial=org.jnp.interfaces.NamingContextFactory
+java.naming.factory.url.pkgs=org.jboss.naming:org.jnp.interfaces
+```
 
 #### Last Resource Commit Optimization (LRCO)
 
