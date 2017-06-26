@@ -11,7 +11,8 @@
     <artifactId>springboot-jta-narayana-gemfire</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>springboot-jta-narayana-gemfire</name>
-    <description>Spring Boot Narayana JTA, JPA, JMS and Gemfire Example Application</description>
+    <description>NarayanaJTA, Geode/GemFire Integration Example Application. Shows how to implement global transaction
+        combining XA (JPA, JMS) and non-XA (e.g. Geode) resources</description>
     <url>http://projects.spring.io/spring-boot/</url>
 
     <properties>
@@ -102,13 +103,6 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
-
-                <!--<dependency>-->
-                    <!--<groupId>org.apache.logging.log4j</groupId>-->
-                    <!--<artifactId>log4j-core</artifactId>-->
-                    <!--<version>2.6.2</version>-->
-                <!--</dependency>-->
-
                 <dependency>
                     <groupId>io.pivotal.gemfire</groupId>
                     <artifactId>geode-core</artifactId>
