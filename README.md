@@ -84,9 +84,17 @@ public class SampleNarayanaApplication implements CommandLineRunner {
 }
 ```
 
-## Build (default with Gemfire)
+## Build
+You can build for either GemFire 9.x (default) or Geode 1.x 
+##### GemFire 9.x (default)
+For GemFire 9.x, follow the instructions to configure the access to the [Pivotal Commercial Maven Repository](http://gemfire.docs.pivotal.io/gemfire/getting_started/installation/obtain_gemfire_maven.html)  
 ``` 
 mvn clean install
+```
+
+##### Geode 1.x (with -Pgeode)
+``` 
+mvn clean install -geode
 ```
 
 ## Run

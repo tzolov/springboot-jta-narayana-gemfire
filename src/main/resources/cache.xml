@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cache
-        xmlns="http://schema.pivotal.io/gemfire/cache"
+        xmlns="http://geode.apache.org/schema/cache"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://schema.pivotal.io/gemfire/cache http://schema.pivotal.io/gemfire/cache/cache-8.1.xsd"
-        version="8.1"
+        xsi:schemaLocation="http://geode.apache.org/schema/cache http://geode.apache.org/schema/cache/cache-1.0.xsd"
+        version="1.0"
         copy-on-read="true">
 
     <cache-server port="${gemfire.server.port}"/>
@@ -13,7 +13,7 @@
     <pdx persistent="false" read-serialized="true">
         <pdx-serializer>
             <class-name>
-                com.gemstone.gemfire.pdx.ReflectionBasedAutoSerializer
+                org.apache.geode.pdx.ReflectionBasedAutoSerializer
             </class-name>
             <parameter name="classes">
                 <string>net.tzolov.geode.jta.narayana.application.Account</string>

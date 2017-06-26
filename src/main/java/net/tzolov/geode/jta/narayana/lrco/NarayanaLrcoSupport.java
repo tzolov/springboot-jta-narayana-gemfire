@@ -17,8 +17,9 @@
 
 package net.tzolov.geode.jta.narayana.lrco;
 
-import com.gemstone.gemfire.LogWriter;
-import com.gemstone.gemfire.cache.CacheFactory;
+
+import org.apache.geode.LogWriter;
+import org.apache.geode.cache.CacheFactory;
 
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;

@@ -17,8 +17,7 @@
 
 package net.tzolov.geode.jta.narayana.application;
 
-import com.gemstone.gemfire.cache.Region;
-import net.tzolov.geode.jta.narayana.lrco.NarayanaLrcoSupport;
+import org.apache.geode.cache.Region;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
@@ -32,37 +31,37 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AccountService {
 
-	private final JmsTemplate jmsTemplate;
+    private final JmsTemplate jmsTemplate;
 
-	private final AccountRepository jpaRepository;
+    private final AccountRepository jpaRepository;
 
-	@Autowired
-	public AccountService(JmsTemplate jmsTemplate, AccountRepository accountRepository) {
-		this.jmsTemplate = jmsTemplate;
-		this.jpaRepository = accountRepository;
-	}
+    @Autowired
+    public AccountService(JmsTemplate jmsTemplate, AccountRepository accountRepository) {
+        this.jmsTemplate = jmsTemplate;
+        this.jpaRepository = accountRepository;
+    }
 
-	public void createAccountAndNotify(String username, Region<String, Account> region) {
+    public void createAccountAndNotify(String username, Region<String, Account> region) {
 
-		//
-		// Enable the Geode LRCO manually (instead of global @NarayanaLastResourceCommitOptimization annotation).
-		//
-		//NarayanaLrcoSupport.enlistGeodeAsLastCommitResource();
+        //
+        // Enable the Geode LRCO manually (instead of global @NarayanaLastResourceCommitOptimization annotation).
+        //
+        //NarayanaLrcoSupport.enlistGeodeAsLastCommitResource();
 
-		this.jmsTemplate.convertAndSend("accounts", username);
+        this.jmsTemplate.convertAndSend("accounts", username);
 
-		Account account = new Account(username);
+        Account account = new Account(username);
 
-		this.jpaRepository.save(account);
+        this.jpaRepository.save(account);
 
-		region.put(username, account);
+        region.put(username, account);
 
-		if ("error".equals(username)) {
-			throw new SampleRuntimeException("Simulated error");
-		}
-	}
+        if ("error".equals(username)) {
+            throw new SampleRuntimeException("Simulated error");
+        }
+    }
 
-	public long jpaEntryCount() {
-		return this.jpaRepository.count();
-	}
+    public long jpaEntryCount() {
+        return this.jpaRepository.count();
+    }
 }

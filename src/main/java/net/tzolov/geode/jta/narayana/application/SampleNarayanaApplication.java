@@ -18,11 +18,11 @@
 package net.tzolov.geode.jta.narayana.application;
 
 import com.arjuna.ats.jta.utils.JNDIManager;
-import com.gemstone.gemfire.cache.Cache;
-import com.gemstone.gemfire.cache.CacheFactory;
-import com.gemstone.gemfire.cache.Region;
-import com.gemstone.gemfire.distributed.ServerLauncher;
 import net.tzolov.geode.jta.narayana.lrco.annotation.NarayanaLastResourceCommitOptimization;
+import org.apache.geode.cache.Cache;
+import org.apache.geode.cache.CacheFactory;
+import org.apache.geode.cache.Region;
+import org.apache.geode.distributed.ServerLauncher;
 import org.jnp.server.NamingBeanImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.annotation.PostConstruct;
 
-import static com.gemstone.gemfire.cache.DataPolicy.PARTITION;
+import static org.apache.geode.cache.DataPolicy.PARTITION;
 
 /**
  * @author Christian Tzolov (christian.tzolov@gmail.com)
